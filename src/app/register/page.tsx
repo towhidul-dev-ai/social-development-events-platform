@@ -55,7 +55,7 @@ export default function RegisterPage() {
         email: email.trim(),
         password,
         image: photoURL.trim() || undefined,
-        callbackURL: "/profile",
+        callbackURL: "/",
       });
 
       if (error) {
@@ -63,7 +63,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push("/profile");
+      router.push("/");
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
@@ -79,7 +79,7 @@ export default function RegisterPage() {
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/profile",
+        callbackURL: "/",
       });
     } catch {
       setError("Google registration failed. Please try again.");

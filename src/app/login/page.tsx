@@ -32,7 +32,7 @@ export default function LoginPage() {
       const { error } = await authClient.signIn.email({
         email: email.trim(),
         password,
-        callbackURL: "/profile",
+        callbackURL: "/",
       });
 
       if (error) {
@@ -40,7 +40,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/profile");
+      router.push("/");
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
@@ -56,7 +56,7 @@ export default function LoginPage() {
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/profile",
+        callbackURL: "/",
       });
     } catch {
       setError("Google sign-in failed. Please try again.");
