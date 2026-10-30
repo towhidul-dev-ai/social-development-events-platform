@@ -1,8 +1,10 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import EditEventDialog from "../components/events/EditEventDialog";
+
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -23,31 +25,51 @@ export default function ManageEventsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await fetch(`${API_URL}/api/events`);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
-        const result = await response.json();
+  // Fetch all events
+  const fetchEvents = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        if (!response.ok) {
-          throw new Error(result.message || "Failed to load events.");
-        }
+      const response = await fetch(`${API_URL}/api/events`);
 
-        setEvents(result.events || []);
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Something went wrong."
-        );
-      } finally {
-        setLoading(false);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to load events.");
       }
-    };
 
-    fetchEvents();
+      setEvents(result.events || []);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Load events when page opens
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  // Open Edit Modal
+  const handleEdit = (eventId: string) => {
+    setSelectedEventId(eventId);
+    setEditOpen(true);
+  };
+
+  // Close Edit Modal
+  const handleCloseEdit = () => {
+    setEditOpen(false);
+    setSelectedEventId(null);
+  };
 
   return (
     <main className="min-h-screen bg-[#F7F8FC] px-4 py-12 dark:bg-[#14182B]">
@@ -61,7 +83,7 @@ export default function ManageEventsPage() {
             </h1>
 
             <p className="mt-2 text-[#737B91]">
-              View all events created on the platform.
+              View, edit, and manage your events.
             </p>
           </div>
 
@@ -73,24 +95,37 @@ export default function ManageEventsPage() {
           </Link>
         </div>
 
-        {/* Loading */}
+        {/* Loading State */}
         {loading && (
           <div className="py-20 text-center">
-            <p className="text-[#737B91]">Loading events...</p>
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-[#E9EAFE] border-t-[#6477E8]" />
+
+            <p className="mt-4 text-[#737B91]">
+              Loading events...
+            </p>
           </div>
         )}
 
-        {/* Error */}
+        {/* Error State */}
         {!loading && error && (
-          <div className="rounded-xl bg-red-50 p-5 text-center text-red-600">
-            {error}
+          <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-center text-red-600">
+            <p>{error}</p>
+
+            <button
+              onClick={fetchEvents}
+              className="mt-4 rounded-lg bg-[#6477E8] px-5 py-2 text-sm font-semibold text-white hover:bg-[#5367D5]"
+            >
+              Try Again
+            </button>
           </div>
         )}
 
         {/* Empty State */}
         {!loading && !error && events.length === 0 && (
           <div className="rounded-2xl border border-[#E5E8F0] bg-white px-6 py-16 text-center dark:border-[#343B59] dark:bg-[#1D2340]">
-            <h2 className="text-xl font-semibold text-[#252B42] dark:text-white">
+            <div className="text-5xl">📅</div>
+
+            <h2 className="mt-5 text-xl font-semibold text-[#252B42] dark:text-white">
               No Events Found
             </h2>
 
@@ -100,20 +135,27 @@ export default function ManageEventsPage() {
 
             <Link
               href="/create-event"
-              className="mt-6 inline-block rounded-xl bg-[#6477E8] px-6 py-3 font-medium text-white hover:bg-[#5367D5]"
+              className="mt-6 inline-block rounded-xl bg-[#6477E8] px-6 py-3 font-medium text-white transition hover:bg-[#5367D5]"
             >
               Create Your First Event
             </Link>
           </div>
         )}
 
-        {/* Events */}
+        {/* Events Grid */}
         {!loading && !error && events.length > 0 && (
           <>
-            <div className="mb-6">
+            <div className="mb-6 flex items-center justify-between">
               <p className="font-medium text-[#737B91]">
                 Total Events: {events.length}
               </p>
+
+              <button
+                onClick={fetchEvents}
+                className="rounded-lg border border-[#E5E8F0] bg-white px-4 py-2 text-sm font-medium text-[#6477E8] transition hover:bg-[#E9EAFE] dark:border-[#343B59] dark:bg-[#1D2340]"
+              >
+                ↻ Refresh
+              </button>
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -122,21 +164,32 @@ export default function ManageEventsPage() {
                   key={event._id}
                   className="overflow-hidden rounded-2xl border border-[#E5E8F0] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md dark:border-[#343B59] dark:bg-[#1D2340]"
                 >
-                  <img
-                    src={event.thumbnail}
-                    alt={event.title}
-                    className="h-52 w-full object-cover"
-                  />
+                  {/* Event Image */}
+                  <div className="h-52 overflow-hidden bg-[#E9EAFE]">
+                    {event.thumbnail ? (
+                      <img
+                        src={event.thumbnail}
+                        alt={event.title}
+                        className="h-full w-full object-cover transition duration-300 hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-[#6477E8]">
+                        No Image Available
+                      </div>
+                    )}
+                  </div>
 
+                  {/* Event Information */}
                   <div className="p-5">
                     <span className="inline-block rounded-full bg-[#E9EAFE] px-3 py-1 text-xs font-semibold text-[#4F5FC4]">
                       {event.eventType}
                     </span>
 
-                    <h2 className="mt-4 text-xl font-bold text-[#252B42] dark:text-white">
+                    <h2 className="mt-4 line-clamp-1 text-xl font-bold text-[#252B42] dark:text-white">
                       {event.title}
                     </h2>
 
+                    {/* Location and Date */}
                     <div className="mt-3 space-y-2 text-sm text-[#737B91]">
                       <p>
                         <span className="font-medium">Location:</span>{" "}
@@ -145,21 +198,51 @@ export default function ManageEventsPage() {
 
                       <p>
                         <span className="font-medium">Date:</span>{" "}
-                        {new Date(event.eventDate).toLocaleDateString()}
+                        {new Date(event.eventDate).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          }
+                        )}
                       </p>
                     </div>
 
+                    {/* Description */}
                     <p className="mt-4 line-clamp-3 text-sm leading-6 text-[#737B91]">
                       {event.description}
                     </p>
-                    <div className="mt-5">
-  <Link
-    href={`/events/${event._id}`}
-    className="inline-flex w-full items-center justify-center rounded-xl bg-[#6477E8] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#5367D5]"
-  >
-    View Details
-  </Link>
-</div>
+
+                    {/* Action Buttons */}
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+
+                      {/* View Button */}
+                      <Link
+                        href={`/events/${event._id}`}
+                        className="col-span-2 inline-flex items-center justify-center rounded-xl bg-[#6477E8] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#5367D5]"
+                      >
+                        View Details
+                      </Link>
+
+                      {/* Edit Button */}
+                      <button
+                        onClick={() => handleEdit(event._id)}
+                        className="inline-flex items-center justify-center rounded-xl border border-[#6477E8] px-4 py-3 text-sm font-semibold text-[#6477E8] transition hover:bg-[#E9EAFE]"
+                      >
+                        ✏️ Edit
+                      </button>
+
+                      {/* Delete Button - Coming Next */}
+                      <button
+                        type="button"
+                        disabled
+                        title="Delete functionality will be added next"
+                        className="inline-flex cursor-not-allowed items-center justify-center rounded-xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-400 opacity-60"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
                   </div>
                 </article>
               ))}
@@ -167,6 +250,16 @@ export default function ManageEventsPage() {
           </>
         )}
       </div>
+
+      {/* Edit Event Modal */}
+      {selectedEventId && (
+        <EditEventDialog
+          eventId={selectedEventId}
+          open={editOpen}
+          onClose={handleCloseEdit}
+          onUpdated={fetchEvents}
+        />
+      )}
     </main>
   );
 }
