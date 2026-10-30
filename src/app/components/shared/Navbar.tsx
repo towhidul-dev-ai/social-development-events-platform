@@ -13,28 +13,46 @@ import {
   ChevronDown,
   UserRound,
   CalendarDays,
+  PlusCircle,
+  Settings,
   LogOut,
-  User,
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
+
+const accountLinks = [
+  {
+    name: "Create Event",
+    href: "/create-event",
+    icon: PlusCircle,
+  },
+  {
+    name: "Manage Events",
+    href: "/manage-events",
+    icon: Settings,
+  },
+  {
+    name: "Joined Events",
+    href: "/joined-events",
+    icon: CalendarDays,
+  },
+];
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Better Auth session
   const { data: session, isPending } = authClient.useSession();
+
+  const user = session?.user;
+  const isLoggedIn = !!user;
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const user = session?.user;
-  const isLoggedIn = !!user;
-
-  // Initialize saved theme
+  // Initialize theme
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
 
@@ -61,7 +79,12 @@ export default function Navbar() {
     try {
       setIsLoggingOut(true);
 
-      await authClient.signOut();
+      const { error } = await authClient.signOut();
+
+      if (error) {
+        console.error("Logout failed:", error.message);
+        return;
+      }
 
       setIsProfileOpen(false);
       setIsMenuOpen(false);
@@ -75,13 +98,15 @@ export default function Navbar() {
     }
   };
 
-  // Navigation links
   const navLinks = [
     { name: "Home", href: "/" },
     { name: "Upcoming Events", href: "/events" },
   ];
 
-  const isActive = (href: string) => pathname === href;
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   const linkStyle = (href: string) =>
     `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
@@ -94,7 +119,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 border-b border-[#E5E8F0] bg-white/90 backdrop-blur-xl dark:border-[#343B59] dark:bg-[#14182B]/90">
       <nav className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
 
-        {/* Brand Logo */}
+        {/* Brand */}
         <Link
           href="/"
           onClick={() => setIsMenuOpen(false)}
@@ -108,6 +133,7 @@ export default function Navbar() {
             <span className="text-xl font-bold tracking-tight text-[#252B42] dark:text-white">
               Cat<span className="text-[#6477E8]">-</span>Hermione
             </span>
+
             <p className="hidden text-[10px] font-medium tracking-[0.16em] text-[#9299AC] sm:block">
               COMMUNITY & CONNECTION
             </p>
@@ -132,6 +158,7 @@ export default function Navbar() {
 
           {/* Theme Toggle */}
           <button
+            type="button"
             onClick={toggleTheme}
             aria-label="Toggle theme"
             className="rounded-xl border border-[#E5E8F0] p-2.5 text-[#626B83] transition hover:bg-[#F0EDFF] hover:text-[#6477E8] dark:border-[#343B59] dark:text-[#C1C6D8] dark:hover:bg-[#292E50]"
@@ -139,11 +166,10 @@ export default function Navbar() {
             {isDark ? <Sun size={19} /> : <Moon size={19} />}
           </button>
 
-          {/* Authentication Loading */}
           {isPending ? (
             <div className="h-10 w-24 animate-pulse rounded-xl bg-[#E9EAFE] dark:bg-[#292E50]" />
           ) : !isLoggedIn ? (
-            <>
+            <div className="flex items-center gap-2">
               <Link
                 href="/login"
                 className="rounded-xl px-5 py-2.5 text-sm font-semibold text-[#6477E8] transition hover:bg-[#E9EAFE] dark:hover:bg-[#292E50]"
@@ -153,14 +179,16 @@ export default function Navbar() {
 
               <Link
                 href="/register"
-                className="rounded-xl bg-[#6477E8] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#6477E8]/20 transition hover:bg-[#5265D5]"
+                className="rounded-xl bg-[#6477E8] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#6477E8]/20 transition hover:bg-[#5367D5]"
               >
                 Register
               </Link>
-            </>
+            </div>
           ) : (
             /* Profile Dropdown */
             <div className="relative">
+
+              {/* Profile Button */}
               <button
                 type="button"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -188,11 +216,12 @@ export default function Navbar() {
                 />
               </button>
 
+              {/* Dropdown Content */}
               {isProfileOpen && (
-                <div className="absolute right-0 top-full mt-3 w-64 rounded-2xl border border-[#E5E8F0] bg-white p-2 shadow-xl dark:border-[#343B59] dark:bg-[#1D2340]">
+                <div className="absolute right-0 top-full mt-3 w-64 overflow-hidden rounded-2xl border border-[#E5E8F0] bg-white shadow-xl dark:border-[#343B59] dark:bg-[#1D2340]">
 
-                  {/* User Information */}
-                  <div className="border-b border-[#E5E8F0] px-3 py-3 dark:border-[#343B59]">
+                  {/* Section 1: User Information */}
+                  <div className="border-b border-[#E5E8F0] px-4 py-3 dark:border-[#343B59]">
                     <p className="truncate text-sm font-semibold text-[#252B42] dark:text-white">
                       {user.name}
                     </p>
@@ -201,26 +230,37 @@ export default function Navbar() {
                     </p>
                   </div>
 
-                  {/* My Profile */}
-                  <Link
-                    href="/profile"
-                    onClick={() => setIsProfileOpen(false)}
-                    className="mt-2 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-[#626B83] transition hover:bg-[#F0EDFF] hover:text-[#6477E8] dark:text-[#C1C6D8] dark:hover:bg-[#292E50]"
-                  >
-                    <User size={18} />
-                    My Profile
-                  </Link>
+                  {/* Section 2: Account Links */}
+                  <div className="border-b border-[#E5E8F0] p-2 dark:border-[#343B59]">
+                    {accountLinks.map((link) => {
+                      const Icon = link.icon;
 
-                  {/* Logout */}
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-red-500 transition hover:bg-red-50 disabled:opacity-60 dark:hover:bg-red-950/30"
-                  >
-                    <LogOut size={18} />
-                    {isLoggingOut ? "Logging out..." : "Logout"}
-                  </button>
+                      return (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          onClick={() => setIsProfileOpen(false)}
+                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#252B42] transition hover:bg-[#F0EDFF] hover:text-[#6477E8] dark:text-[#C1C6D8] dark:hover:bg-[#292E50]"
+                        >
+                          <Icon size={17} className="text-[#6477E8]" />
+                          {link.name}
+                        </Link>
+                      );
+                    })}
+                  </div>
+
+                  {/* Section 3: Logout */}
+                  <div className="p-2">
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      disabled={isLoggingOut}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 transition hover:bg-red-50 disabled:opacity-60 dark:hover:bg-red-950/30"
+                    >
+                      <LogOut size={17} />
+                      {isLoggingOut ? "Logging out..." : "Logout"}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -229,8 +269,8 @@ export default function Navbar() {
 
         {/* Mobile Actions */}
         <div className="flex items-center gap-2 md:hidden">
-
           <button
+            type="button"
             onClick={toggleTheme}
             aria-label="Toggle theme"
             className="rounded-xl border border-[#E5E8F0] p-2.5 text-[#626B83] dark:border-[#343B59] dark:text-[#C1C6D8]"
@@ -239,6 +279,7 @@ export default function Navbar() {
           </button>
 
           <button
+            type="button"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle navigation menu"
             aria-expanded={isMenuOpen}
@@ -287,7 +328,7 @@ export default function Navbar() {
               </div>
             ) : (
               <>
-                {/* Mobile Profile Information */}
+                {/* Mobile User Information */}
                 <div className="mt-3 flex items-center gap-3 rounded-xl bg-[#F7F8FC] p-3 dark:bg-[#1D2340]">
                   {user.image ? (
                     <img
@@ -311,17 +352,26 @@ export default function Navbar() {
                   </div>
                 </div>
 
-                <Link
-                  href="/profile"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={linkStyle("/profile")}
-                >
-                  <span className="flex items-center gap-3">
-                    <User size={17} />
-                    My Profile
-                  </span>
-                </Link>
+                {/* Mobile Account Links */}
+                {accountLinks.map((link) => {
+                  const Icon = link.icon;
 
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setIsMenuOpen(false)}
+                      className={linkStyle(link.href)}
+                    >
+                      <span className="flex items-center gap-3">
+                        <Icon size={17} />
+                        {link.name}
+                      </span>
+                    </Link>
+                  );
+                })}
+
+                {/* Mobile Logout */}
                 <button
                   type="button"
                   onClick={handleLogout}
