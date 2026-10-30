@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import EditEventDialog from "../components/events/EditEventDialog";
-
+import DeleteEventDialog from "../components/events/DeleteEventDialog";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -25,17 +25,22 @@ export default function ManageEventsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Edit modal states
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
 
-  // Fetch all events
+  // Delete modal states
+  const [selectedDeleteEvent, setSelectedDeleteEvent] =
+    useState<Event | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // Fetch events
   const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
 
       const response = await fetch(`${API_URL}/api/events`);
-
       const result = await response.json();
 
       if (!response.ok) {
@@ -45,9 +50,7 @@ export default function ManageEventsPage() {
       setEvents(result.events || []);
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong."
+        err instanceof Error ? err.message : "Something went wrong."
       );
     } finally {
       setLoading(false);
@@ -59,16 +62,28 @@ export default function ManageEventsPage() {
     fetchEvents();
   }, [fetchEvents]);
 
-  // Open Edit Modal
+  // Open edit modal
   const handleEdit = (eventId: string) => {
     setSelectedEventId(eventId);
     setEditOpen(true);
   };
 
-  // Close Edit Modal
+  // Close edit modal
   const handleCloseEdit = () => {
     setEditOpen(false);
     setSelectedEventId(null);
+  };
+
+  // Open delete confirmation modal
+  const handleDelete = (event: Event) => {
+    setSelectedDeleteEvent(event);
+    setDeleteOpen(true);
+  };
+
+  // Close delete modal
+  const handleCloseDelete = () => {
+    setDeleteOpen(false);
+    setSelectedDeleteEvent(null);
   };
 
   return (
@@ -113,7 +128,7 @@ export default function ManageEventsPage() {
 
             <button
               onClick={fetchEvents}
-              className="mt-4 rounded-lg bg-[#6477E8] px-5 py-2 text-sm font-semibold text-white hover:bg-[#5367D5]"
+              className="mt-4 rounded-lg bg-[#6477E8] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#5367D5]"
             >
               Try Again
             </button>
@@ -130,7 +145,7 @@ export default function ManageEventsPage() {
             </h2>
 
             <p className="mt-2 text-[#737B91]">
-              You haven't created any events yet.
+              You haven&apos;t created any events yet.
             </p>
 
             <Link
@@ -217,7 +232,7 @@ export default function ManageEventsPage() {
                     {/* Action Buttons */}
                     <div className="mt-5 grid grid-cols-2 gap-3">
 
-                      {/* View Button */}
+                      {/* View Details */}
                       <Link
                         href={`/events/${event._id}`}
                         className="col-span-2 inline-flex items-center justify-center rounded-xl bg-[#6477E8] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#5367D5]"
@@ -225,20 +240,20 @@ export default function ManageEventsPage() {
                         View Details
                       </Link>
 
-                      {/* Edit Button */}
+                      {/* Edit */}
                       <button
+                        type="button"
                         onClick={() => handleEdit(event._id)}
                         className="inline-flex items-center justify-center rounded-xl border border-[#6477E8] px-4 py-3 text-sm font-semibold text-[#6477E8] transition hover:bg-[#E9EAFE]"
                       >
                         ✏️ Edit
                       </button>
 
-                      {/* Delete Button - Coming Next */}
+                      {/* Delete */}
                       <button
                         type="button"
-                        disabled
-                        title="Delete functionality will be added next"
-                        className="inline-flex cursor-not-allowed items-center justify-center rounded-xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-400 opacity-60"
+                        onClick={() => handleDelete(event)}
+                        className="inline-flex items-center justify-center rounded-xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50"
                       >
                         🗑️ Delete
                       </button>
@@ -258,6 +273,17 @@ export default function ManageEventsPage() {
           open={editOpen}
           onClose={handleCloseEdit}
           onUpdated={fetchEvents}
+        />
+      )}
+
+      {/* Delete Event Modal */}
+      {selectedDeleteEvent && (
+        <DeleteEventDialog
+          eventId={selectedDeleteEvent._id}
+          eventTitle={selectedDeleteEvent.title}
+          open={deleteOpen}
+          onClose={handleCloseDelete}
+          onDeleted={fetchEvents}
         />
       )}
     </main>

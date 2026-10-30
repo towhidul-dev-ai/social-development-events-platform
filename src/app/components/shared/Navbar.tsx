@@ -333,6 +333,8 @@ export default function Navbar() {
                   {user.image ? (
                     <img
                       src={user.image}
+                    //   height={300}
+                    //   width={400}
                       alt={user.name || "Profile"}
                       className="h-11 w-11 rounded-full object-cover"
                     />
