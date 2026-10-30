@@ -152,6 +152,14 @@ export default function ManageEventsPage() {
                     <p className="mt-4 line-clamp-3 text-sm leading-6 text-[#737B91]">
                       {event.description}
                     </p>
+                    <div className="mt-5">
+  <Link
+    href={`/events/${event._id}`}
+    className="inline-flex w-full items-center justify-center rounded-xl bg-[#6477E8] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#5367D5]"
+  >
+    View Details
+  </Link>
+</div>
                   </div>
                 </article>
               ))}
