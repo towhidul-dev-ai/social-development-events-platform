@@ -2,6 +2,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { authClient } from "@/lib/auth-client";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -47,6 +48,9 @@ export default function EditEventDialog({
   onClose,
   onUpdated,
 }: EditEventDialogProps) {
+  const { data: session, isPending } = authClient.useSession();
+  const user = session?.user;
+
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -63,10 +67,7 @@ export default function EditEventDialog({
         setError("");
         setSuccess("");
 
-        const response = await fetch(
-          `${API_URL}/api/events/${eventId}`
-        );
-
+        const response = await fetch(`${API_URL}/api/events/${eventId}`);
         const result = await response.json();
 
         if (!response.ok) {
@@ -87,9 +88,7 @@ export default function EditEventDialog({
         });
       } catch (err) {
         setError(
-          err instanceof Error
-            ? err.message
-            : "Something went wrong."
+          err instanceof Error ? err.message : "Something went wrong."
         );
       } finally {
         setLoading(false);
@@ -117,13 +116,25 @@ export default function EditEventDialog({
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (isPending) {
+      setError("Please wait while your session loads.");
+      return;
+    }
+
+    if (!user?.email) {
+      setError("Please log in to update your event.");
+      return;
+    }
+
     try {
       setSaving(true);
       setError("");
       setSuccess("");
 
       const response = await fetch(
-        `${API_URL}/api/events/${eventId}`,
+        `${API_URL}/api/events/${eventId}?email=${encodeURIComponent(
+          user.email
+        )}`,
         {
           method: "PUT",
           headers: {
@@ -135,19 +146,17 @@ export default function EditEventDialog({
 
       const result = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok || !result.success) {
         throw new Error(result.message || "Failed to update event.");
       }
 
       setSuccess("Event updated successfully!");
 
-      onUpdated();
+      await onUpdated();
       onClose();
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update event."
+        err instanceof Error ? err.message : "Failed to update event."
       );
     } finally {
       setSaving(false);
@@ -164,7 +173,6 @@ export default function EditEventDialog({
       }}
     >
       <div className="my-auto w-full max-w-2xl rounded-2xl bg-white shadow-2xl dark:bg-[#1D2340]">
-
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-[#E5E8F0] px-6 py-5 dark:border-[#343B59]">
           <div>
@@ -188,7 +196,6 @@ export default function EditEventDialog({
 
         {/* Modal Body */}
         <form onSubmit={handleSubmit} className="space-y-5 p-6">
-
           {loading ? (
             <div className="py-12 text-center text-[#737B91]">
               Loading event information...
@@ -212,7 +219,6 @@ export default function EditEventDialog({
                 <label className="mb-2 block text-sm font-semibold text-[#252B42] dark:text-white">
                   Event Title *
                 </label>
-
                 <input
                   type="text"
                   name="title"
@@ -229,7 +235,6 @@ export default function EditEventDialog({
                 <label className="mb-2 block text-sm font-semibold text-[#252B42] dark:text-white">
                   Event Type *
                 </label>
-
                 <select
                   name="eventType"
                   value={formData.eventType}
@@ -254,7 +259,6 @@ export default function EditEventDialog({
                   <label className="mb-2 block text-sm font-semibold text-[#252B42] dark:text-white">
                     Event Date *
                   </label>
-
                   <input
                     type="date"
                     name="eventDate"
@@ -270,7 +274,6 @@ export default function EditEventDialog({
                   <label className="mb-2 block text-sm font-semibold text-[#252B42] dark:text-white">
                     Location *
                   </label>
-
                   <input
                     type="text"
                     name="location"
@@ -288,7 +291,6 @@ export default function EditEventDialog({
                 <label className="mb-2 block text-sm font-semibold text-[#252B42] dark:text-white">
                   Thumbnail URL
                 </label>
-
                 <input
                   type="url"
                   name="thumbnail"
@@ -305,7 +307,6 @@ export default function EditEventDialog({
                   <p className="mb-2 text-sm font-semibold text-[#252B42] dark:text-white">
                     Image Preview
                   </p>
-
                   <img
                     src={formData.thumbnail}
                     alt="Event preview"
@@ -322,7 +323,6 @@ export default function EditEventDialog({
                 <label className="mb-2 block text-sm font-semibold text-[#252B42] dark:text-white">
                   Description *
                 </label>
-
                 <textarea
                   name="description"
                   value={formData.description}
@@ -347,7 +347,7 @@ export default function EditEventDialog({
 
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || loading || isPending || !user?.email}
                   className="rounded-xl bg-[#6477E8] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#5367D5] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving ? "Saving Changes..." : "Save Changes"}

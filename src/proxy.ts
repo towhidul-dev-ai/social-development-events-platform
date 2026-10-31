@@ -51,6 +51,8 @@ export const config = {
   matcher: [
     "/profile/:path*",
     "/events/:path*",
-    "/upcoming-event-details/:path*",
+     "/create-event/:path*",
+    "/manage-events/:path*",
+    "/joined-events/:path*",
   ],
 };

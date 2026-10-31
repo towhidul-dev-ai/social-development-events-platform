@@ -39,16 +39,16 @@ export default function HeroSection() {
               href="/upcoming-events"
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#6477E8] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#6477E8]/20 transition-all hover:-translate-y-0.5 hover:bg-[#5367D5]"
             >
-              Upcoming Events
+            Explore Upcoming Events
               <ArrowRight size={18} />
             </Link>
 
             <Link
-              href="/joint-events"
+              href="/create-event"
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#6477E8]/25 bg-white px-6 py-3 text-sm font-semibold text-[#4F5FC4] transition-colors hover:border-[#6477E8] hover:bg-[#E9EAFE]"
             >
               <CalendarDays size={18} />
-              Join Our Community
+              Create an Event
             </Link>
           </div>
 

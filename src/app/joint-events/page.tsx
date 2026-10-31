@@ -28,7 +28,30 @@ interface Event {
   eventDate: string;
   creatorName?: string;
   creatorImage?: string;
-  joinedAt?: string;
+  joinedAt?: string | null;
+}
+
+interface JoinedEventsResponse {
+  success: boolean;
+  total?: number;
+  events?: Event[];
+  message?: string;
+}
+
+function formatDate(dateString?: string | null) {
+  if (!dateString) return "Date unavailable";
+
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date unavailable";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export default function JoinedEventsPage() {
@@ -62,7 +85,12 @@ export default function JoinedEventsPage() {
         }
       );
 
-      const data = await response.json();
+      const data: JoinedEventsResponse = await response
+        .json()
+        .catch(() => ({
+          success: false,
+          message: "Invalid server response.",
+        }));
 
       if (!response.ok || !data.success) {
         throw new Error(
@@ -70,7 +98,26 @@ export default function JoinedEventsPage() {
         );
       }
 
-      setEvents(data.events || []);
+      // Backend returns events sorted by eventDate (earliest first).
+      // Sort again defensively in the frontend.
+      const sortedEvents = [...(data.events || [])].sort(
+        (a, b) => {
+          const dateA = new Date(a.eventDate).getTime();
+          const dateB = new Date(b.eventDate).getTime();
+
+          const validA = Number.isNaN(dateA)
+            ? Number.POSITIVE_INFINITY
+            : dateA;
+
+          const validB = Number.isNaN(dateB)
+            ? Number.POSITIVE_INFINITY
+            : dateB;
+
+          return validA - validB;
+        }
+      );
+
+      setEvents(sortedEvents);
     } catch (error) {
       console.error("Joined events error:", error);
 
@@ -84,6 +131,7 @@ export default function JoinedEventsPage() {
     }
   }, [user?.email]);
 
+  // Fetch after session loads
   useEffect(() => {
     if (!sessionLoading) {
       fetchJoinedEvents();
@@ -197,9 +245,20 @@ export default function JoinedEventsPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
-            <AlertCircle size={19} />
-            {error}
+          <div className="mb-6 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle size={19} className="shrink-0" />
+              {error}
+            </div>
+
+            <button
+              type="button"
+              onClick={fetchJoinedEvents}
+              disabled={loading}
+              className="font-semibold underline disabled:opacity-50"
+            >
+              Try Again
+            </button>
           </div>
         )}
 
@@ -230,7 +289,7 @@ export default function JoinedEventsPage() {
         )}
 
         {/* Event Cards */}
-        {events.length > 0 && (
+        {!error && events.length > 0 && (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {events.map((event) => (
               <article
@@ -276,15 +335,7 @@ export default function JoinedEventsPage() {
                         size={16}
                         className="shrink-0 text-[#6477E8]"
                       />
-
-                      {new Date(event.eventDate).toLocaleDateString(
-                        "en-US",
-                        {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        }
-                      )}
+                      {formatDate(event.eventDate)}
                     </div>
 
                     <div className="flex items-center gap-2 text-sm text-[#737B91] dark:text-[#C1C6D8]">
@@ -292,7 +343,6 @@ export default function JoinedEventsPage() {
                         size={16}
                         className="shrink-0 text-[#6477E8]"
                       />
-
                       <span className="truncate">{event.location}</span>
                     </div>
 
@@ -301,7 +351,6 @@ export default function JoinedEventsPage() {
                         size={16}
                         className="shrink-0 text-[#6477E8]"
                       />
-
                       Organizer: {event.creatorName || "Community Organizer"}
                     </div>
                   </div>
@@ -309,12 +358,7 @@ export default function JoinedEventsPage() {
                   {/* Joined Date */}
                   {event.joinedAt && (
                     <p className="mt-4 text-xs text-[#9299AC]">
-                      Joined on{" "}
-                      {new Date(event.joinedAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                      Joined on {formatDate(event.joinedAt)}
                     </p>
                   )}
 
