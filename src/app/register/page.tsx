@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -72,20 +73,35 @@ export default function RegisterPage() {
     }
   };
 
-  const handleGoogleRegister = async () => {
-    setError("");
+  // const handleGoogleRegister = async () => {
+  //   setError("");
+  //   setLoading(true);
+
+  //   try {
+  //     await authClient.signIn.social({
+  //       provider: "google",
+  //       callbackURL: "/",
+  //     });
+  //   } catch {
+  //     setError("Google registration failed. Please try again.");
+  //     setLoading(false);
+  //   }
+  // };
+
+  const handleGithubRegister = async () => {
+  try {
     setLoading(true);
 
-    try {
-      await authClient.signIn.social({
-        provider: "google",
-        callbackURL: "/",
-      });
-    } catch {
-      setError("Google registration failed. Please try again.");
-      setLoading(false);
-    }
-  };
+    await authClient.signIn.social({
+      provider: "github",
+      callbackURL: "/",
+    });
+  } catch (error) {
+    console.error("GitHub registration failed:", error);
+    toast.error("GitHub registration failed. Please try again.");
+    setLoading(false);
+  }
+};
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F7F8FC] px-4 py-10">
@@ -247,7 +263,7 @@ export default function RegisterPage() {
         </form>
 
         {/* Google */}
-        <div className="my-7 flex items-center gap-4">
+        {/* <div className="my-7 flex items-center gap-4">
           <div className="h-px flex-1 bg-[#E5E8F0]" />
           <span className="text-xs font-medium text-[#737B91]">
             OR CONTINUE WITH
@@ -263,7 +279,25 @@ export default function RegisterPage() {
         >
           <span className="font-bold text-[#4285F4]">G</span>
           Continue with Google
-        </button>
+        </button> */}
+
+        {/* GitHub */}
+        <button
+        type="button"
+        onClick={handleGithubRegister}
+        disabled={loading}
+        className="mt-3 flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#E5E8F0] bg-white text-sm font-semibold text-[#252B42] transition hover:bg-[#F7F8FC] disabled:opacity-60"
+        >
+      <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="currentColor"
+      aria-hidden="true"
+       >
+      <path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.54v-2.08c-3.1.67-3.75-1.32-3.75-1.32-.5-1.29-1.24-1.63-1.24-1.63-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15.99 1.7 2.6 1.21 3.23.93.1-.72.39-1.21.71-1.49-2.47-.28-5.07-1.24-5.07-5.5 0-1.22.44-2.22 1.15-3-.12-.28-.5-1.42.11-2.96 0 0 .94-.3 3.05 1.14a10.6 10.6 0 0 1 5.55 0c2.12-1.44 3.05-1.14 3.05-1.14.61 1.54.23 2.68.12 2.96.71.78 1.14 1.78 1.14 3 0 4.27-2.6 5.21-5.08 5.49.4.35.75 1.02.75 2.06v3.07c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z" />
+      </svg>
+      Continue with GitHub
+      </button>
 
         {/* Login Link */}
         <p className="mt-7 text-center text-sm text-[#737B91]">

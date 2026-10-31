@@ -44,7 +44,7 @@ export default function HeroSection() {
             </Link>
 
             <Link
-              href="/register"
+              href="/joint-events"
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#6477E8]/25 bg-white px-6 py-3 text-sm font-semibold text-[#4F5FC4] transition-colors hover:border-[#6477E8] hover:bg-[#E9EAFE]"
             >
               <CalendarDays size={18} />
