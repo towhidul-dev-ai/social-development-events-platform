@@ -15,9 +15,18 @@ import {
   ArrowRight,
   Check,
   X,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
+
+type RegisterErrors = {
+  name?: string;
+  email?: string;
+  photoURL?: string;
+  password?: string;
+};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -29,29 +38,114 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [errors, setErrors] = useState<RegisterErrors>({});
 
+  // Live password requirements.
   const hasUppercase = /[A-Z]/.test(password);
   const hasLowercase = /[a-z]/.test(password);
   const hasMinLength = password.length >= 6;
 
-  const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
+  // Validate all registration fields.
+  const validateForm = (): RegisterErrors => {
+    const newErrors: RegisterErrors = {};
 
-    if (!name.trim()) {
-      setError("Please enter your full name.");
-      return;
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPhotoURL = photoURL.trim();
+
+    // Name validation.
+    if (!trimmedName) {
+      newErrors.name = "Full name is required.";
+    } else if (trimmedName.length < 3) {
+      newErrors.name = "Name must contain at least 3 characters.";
+    } else if (trimmedName.length > 50) {
+      newErrors.name = "Name cannot exceed 50 characters.";
+    } else if (!/^[\p{L}\p{M}][\p{L}\p{M}\s.'-]*$/u.test(trimmedName)) {
+      newErrors.name =
+        "Please enter a valid name using letters only.";
     }
 
-    if (!hasUppercase || !hasLowercase || !hasMinLength) {
-      setError("Please meet all password requirements.");
+    // Email validation.
+    if (!trimmedEmail) {
+      newErrors.email = "Email address is required.";
+    } else if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)
+    ) {
+      newErrors.email = "Please enter a valid email address.";
+    }
+
+    // Optional profile photo URL validation.
+    if (trimmedPhotoURL) {
+      try {
+        const imageURL = new URL(trimmedPhotoURL);
+
+        if (!["http:", "https:"].includes(imageURL.protocol)) {
+          newErrors.photoURL =
+            "Please enter an HTTP or HTTPS image URL.";
+        }
+      } catch {
+        newErrors.photoURL = "Please enter a valid photo URL.";
+      }
+    }
+
+    // Password validation.
+    if (!password) {
+      newErrors.password = "Password is required.";
+    } else if (!hasMinLength || !hasUppercase || !hasLowercase) {
+      newErrors.password =
+        "Please meet all password requirements below.";
+    }
+
+    return newErrors;
+  };
+
+  // Clear individual field errors.
+  const handleFieldChange = (
+    field: keyof RegisterErrors,
+    value: string
+  ) => {
+    switch (field) {
+      case "name":
+        setName(value);
+        break;
+      case "email":
+        setEmail(value);
+        break;
+      case "photoURL":
+        setPhotoURL(value);
+        break;
+      case "password":
+        setPassword(value);
+        break;
+    }
+
+    setErrors((previous) => ({
+      ...previous,
+      [field]: undefined,
+    }));
+
+    setError("");
+  };
+
+  // Registration handler.
+  const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (loading) return;
+
+    setError("");
+
+    const validationErrors = validateForm();
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
       return;
     }
 
     setLoading(true);
 
     try {
-      const { error } = await authClient.signUp.email({
+      const { error: authError } = await authClient.signUp.email({
         name: name.trim(),
         email: email.trim(),
         password,
@@ -59,49 +153,46 @@ export default function RegisterPage() {
         callbackURL: "/",
       });
 
-      if (error) {
-        setError(error.message || "Registration failed.");
+      if (authError) {
+        setError(authError.message || "Registration failed.");
         return;
       }
 
+      toast.success("Account created successfully!");
+
       router.push("/");
       router.refresh();
-    } catch {
+    } catch (err) {
+      console.error("Registration failed:", err);
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // const handleGoogleRegister = async () => {
-  //   setError("");
-  //   setLoading(true);
-
-  //   try {
-  //     await authClient.signIn.social({
-  //       provider: "google",
-  //       callbackURL: "/",
-  //     });
-  //   } catch {
-  //     setError("Google registration failed. Please try again.");
-  //     setLoading(false);
-  //   }
-  // };
-
+  // GitHub registration.
   const handleGithubRegister = async () => {
-  try {
+    if (loading) return;
+
+    setError("");
     setLoading(true);
 
-    await authClient.signIn.social({
-      provider: "github",
-      callbackURL: "/",
-    });
-  } catch (error) {
-    console.error("GitHub registration failed:", error);
-    toast.error("GitHub registration failed. Please try again.");
-    setLoading(false);
-  }
-};
+    try {
+      await authClient.signIn.social({
+        provider: "github",
+        callbackURL: "/",
+      });
+    } catch (err) {
+      console.error("GitHub registration failed:", err);
+      toast.error("GitHub registration failed. Please try again.");
+      setLoading(false);
+    }
+  };
+
+  const inputClass = (hasError: boolean) =>
+    `w-full bg-transparent text-sm text-[#252B42] outline-none placeholder:text-[#A5ABC0] ${
+      hasError ? "placeholder:text-red-300" : ""
+    }`;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#F7F8FC] px-4 py-10">
@@ -126,129 +217,253 @@ export default function RegisterPage() {
         </div>
 
         {/* Registration Form */}
-        <form onSubmit={handleRegister} className="mt-8 space-y-5">
-
+        <form
+          onSubmit={handleRegister}
+          noValidate
+          className="mt-8 space-y-5"
+        >
           {/* Full Name */}
           <div>
-            <label className="mb-2 block text-sm font-semibold text-[#252B42]">
-              Full Name
+            <label
+              htmlFor="name"
+              className="mb-2 block text-sm font-semibold text-[#252B42]"
+            >
+              Full Name <span className="text-red-500">*</span>
             </label>
 
-            <div className="flex h-12 items-center gap-3 rounded-xl border border-[#E5E8F0] bg-[#F7F8FC] px-4 focus-within:border-[#6477E8]">
-              <User size={18} className="text-[#737B91]" />
+            <div
+              className={`flex h-12 items-center gap-3 rounded-xl border bg-[#F7F8FC] px-4 focus-within:border-[#6477E8] ${
+                errors.name ? "border-red-400" : "border-[#E5E8F0]"
+              }`}
+            >
+              <User
+                size={18}
+                className={errors.name ? "text-red-400" : "text-[#737B91]"}
+              />
 
               <input
+                id="name"
                 type="text"
                 placeholder="Enter your full name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) =>
+                  handleFieldChange("name", e.target.value)
+                }
                 autoComplete="name"
-                required
-                className="w-full bg-transparent text-sm text-[#252B42] outline-none placeholder:text-[#A5ABC0]"
+                maxLength={50}
+                aria-invalid={!!errors.name}
+                disabled={loading}
+                className={inputClass(!!errors.name)}
               />
             </div>
+
+            {errors.name && (
+              <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-500">
+                <AlertCircle size={14} />
+                {errors.name}
+              </p>
+            )}
           </div>
 
           {/* Email */}
           <div>
-            <label className="mb-2 block text-sm font-semibold text-[#252B42]">
-              Email Address
+            <label
+              htmlFor="email"
+              className="mb-2 block text-sm font-semibold text-[#252B42]"
+            >
+              Email Address <span className="text-red-500">*</span>
             </label>
 
-            <div className="flex h-12 items-center gap-3 rounded-xl border border-[#E5E8F0] bg-[#F7F8FC] px-4 focus-within:border-[#6477E8]">
-              <Mail size={18} className="text-[#737B91]" />
+            <div
+              className={`flex h-12 items-center gap-3 rounded-xl border bg-[#F7F8FC] px-4 focus-within:border-[#6477E8] ${
+                errors.email ? "border-red-400" : "border-[#E5E8F0]"
+              }`}
+            >
+              <Mail
+                size={18}
+                className={errors.email ? "text-red-400" : "text-[#737B91]"}
+              />
 
               <input
+                id="email"
                 type="email"
                 placeholder="name@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) =>
+                  handleFieldChange("email", e.target.value)
+                }
                 autoComplete="email"
-                required
-                className="w-full bg-transparent text-sm text-[#252B42] outline-none placeholder:text-[#A5ABC0]"
+                aria-invalid={!!errors.email}
+                disabled={loading}
+                className={inputClass(!!errors.email)}
               />
             </div>
+
+            {errors.email && (
+              <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-500">
+                <AlertCircle size={14} />
+                {errors.email}
+              </p>
+            )}
           </div>
 
           {/* Profile Photo */}
           <div>
-            <label className="mb-2 block text-sm font-semibold text-[#252B42]">
+            <label
+              htmlFor="photoURL"
+              className="mb-2 block text-sm font-semibold text-[#252B42]"
+            >
               Profile Photo URL
+              <span className="ml-1 text-xs font-normal text-[#737B91]">
+                (Optional)
+              </span>
             </label>
 
-            <div className="flex h-12 items-center gap-3 rounded-xl border border-[#E5E8F0] bg-[#F7F8FC] px-4 focus-within:border-[#6477E8]">
-              <ImageIcon size={18} className="text-[#737B91]" />
+            <div
+              className={`flex h-12 items-center gap-3 rounded-xl border bg-[#F7F8FC] px-4 focus-within:border-[#6477E8] ${
+                errors.photoURL
+                  ? "border-red-400"
+                  : "border-[#E5E8F0]"
+              }`}
+            >
+              <ImageIcon
+                size={18}
+                className={
+                  errors.photoURL ? "text-red-400" : "text-[#737B91]"
+                }
+              />
 
               <input
+                id="photoURL"
                 type="url"
                 placeholder="https://example.com/photo.jpg"
                 value={photoURL}
-                onChange={(e) => setPhotoURL(e.target.value)}
-                className="w-full bg-transparent text-sm text-[#252B42] outline-none placeholder:text-[#A5ABC0]"
+                onChange={(e) =>
+                  handleFieldChange("photoURL", e.target.value)
+                }
+                disabled={loading}
+                aria-invalid={!!errors.photoURL}
+                className={inputClass(!!errors.photoURL)}
               />
             </div>
 
-            <p className="mt-2 text-xs text-[#737B91]">
-              Optional: Leave empty for the default avatar.
-            </p>
+            {errors.photoURL ? (
+              <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-500">
+                <AlertCircle size={14} />
+                {errors.photoURL}
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-[#737B91]">
+                Optional: Leave empty for the default avatar.
+              </p>
+            )}
           </div>
 
           {/* Password */}
           <div>
-            <label className="mb-2 block text-sm font-semibold text-[#252B42]">
-              Password
+            <label
+              htmlFor="password"
+              className="mb-2 block text-sm font-semibold text-[#252B42]"
+            >
+              Password <span className="text-red-500">*</span>
             </label>
 
-            <div className="flex h-12 items-center gap-3 rounded-xl border border-[#E5E8F0] bg-[#F7F8FC] px-4 focus-within:border-[#6477E8]">
-              <Lock size={18} className="text-[#737B91]" />
+            <div
+              className={`flex h-12 items-center gap-3 rounded-xl border bg-[#F7F8FC] px-4 focus-within:border-[#6477E8] ${
+                errors.password
+                  ? "border-red-400"
+                  : "border-[#E5E8F0]"
+              }`}
+            >
+              <Lock
+                size={18}
+                className={
+                  errors.password ? "text-red-400" : "text-[#737B91]"
+                }
+              />
 
               <input
+                id="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Create a password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) =>
+                  handleFieldChange("password", e.target.value)
+                }
                 autoComplete="new-password"
-                required
-                className="w-full bg-transparent text-sm text-[#252B42] outline-none placeholder:text-[#A5ABC0]"
+                aria-invalid={!!errors.password}
+                disabled={loading}
+                className={inputClass(!!errors.password)}
               />
 
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                className="text-[#737B91] hover:text-[#6477E8]"
+                aria-label={
+                  showPassword ? "Hide password" : "Show password"
+                }
+                disabled={loading}
+                className="shrink-0 text-[#737B91] hover:text-[#6477E8]"
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? (
+                  <EyeOff size={18} />
+                ) : (
+                  <Eye size={18} />
+                )}
               </button>
             </div>
 
             {/* Password Requirements */}
-            <div className="mt-3 space-y-2">
-              <p className={`flex items-center gap-2 text-xs ${hasUppercase ? "text-green-600" : "text-[#737B91]"}`}>
+            <div className="mt-3 space-y-2 rounded-xl bg-[#F7F8FC] p-3">
+              <p className="mb-2 text-xs font-semibold text-[#252B42]">
+                Password requirements
+              </p>
+
+              <p
+                className={`flex items-center gap-2 text-xs ${
+                  hasUppercase ? "text-green-600" : "text-[#737B91]"
+                }`}
+              >
                 {hasUppercase ? <Check size={15} /> : <X size={15} />}
                 At least one uppercase letter (A-Z)
               </p>
 
-              <p className={`flex items-center gap-2 text-xs ${hasLowercase ? "text-green-600" : "text-[#737B91]"}`}>
+              <p
+                className={`flex items-center gap-2 text-xs ${
+                  hasLowercase ? "text-green-600" : "text-[#737B91]"
+                }`}
+              >
                 {hasLowercase ? <Check size={15} /> : <X size={15} />}
                 At least one lowercase letter (a-z)
               </p>
 
-              <p className={`flex items-center gap-2 text-xs ${hasMinLength ? "text-green-600" : "text-[#737B91]"}`}>
+              <p
+                className={`flex items-center gap-2 text-xs ${
+                  hasMinLength ? "text-green-600" : "text-[#737B91]"
+                }`}
+              >
                 {hasMinLength ? <Check size={15} /> : <X size={15} />}
-                Minimum 6 characters length
+                Minimum 6 characters
               </p>
             </div>
+
+            {errors.password && (
+              <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-500">
+                <AlertCircle size={14} />
+                {errors.password}
+              </p>
+            )}
           </div>
 
-          {/* Error */}
+          {/* General Error */}
           {error && (
-            <p
+            <div
               role="alert"
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+              className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
             >
+              <AlertCircle size={17} className="shrink-0" />
               {error}
-            </p>
+            </div>
           )}
 
           {/* Register Button */}
@@ -257,47 +472,41 @@ export default function RegisterPage() {
             disabled={loading}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#6477E8] text-sm font-semibold text-white shadow-md shadow-[#6477E8]/20 transition hover:bg-[#5367D5] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "Creating account..." : "Register"}
-            {!loading && <ArrowRight size={18} />}
+            {loading ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Creating account...
+              </>
+            ) : (
+              <>
+                Register
+                <ArrowRight size={18} />
+              </>
+            )}
           </button>
         </form>
 
-        {/* Google */}
-        {/* <div className="my-7 flex items-center gap-4">
-          <div className="h-px flex-1 bg-[#E5E8F0]" />
-          <span className="text-xs font-medium text-[#737B91]">
-            OR CONTINUE WITH
-          </span>
-          <div className="h-px flex-1 bg-[#E5E8F0]" />
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleRegister}
-          disabled={loading}
-          className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#E5E8F0] bg-white text-sm font-semibold text-[#252B42] transition hover:bg-[#F7F8FC] disabled:opacity-60"
-        >
-          <span className="font-bold text-[#4285F4]">G</span>
-          Continue with Google
-        </button> */}
-
         {/* GitHub */}
         <button
-        type="button"
-        onClick={handleGithubRegister}
-        disabled={loading}
-        className="mt-3 flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#E5E8F0] bg-white text-sm font-semibold text-[#252B42] transition hover:bg-[#F7F8FC] disabled:opacity-60"
+          type="button"
+          onClick={handleGithubRegister}
+          disabled={loading}
+          className="mt-6 flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#E5E8F0] bg-white text-sm font-semibold text-[#252B42] transition hover:bg-[#F7F8FC] disabled:cursor-not-allowed disabled:opacity-60"
         >
-      <svg
-      viewBox="0 0 24 24"
-      className="h-5 w-5"
-      fill="currentColor"
-      aria-hidden="true"
-       >
-      <path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.54v-2.08c-3.1.67-3.75-1.32-3.75-1.32-.5-1.29-1.24-1.63-1.24-1.63-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15.99 1.7 2.6 1.21 3.23.93.1-.72.39-1.21.71-1.49-2.47-.28-5.07-1.24-5.07-5.5 0-1.22.44-2.22 1.15-3-.12-.28-.5-1.42.11-2.96 0 0 .94-.3 3.05 1.14a10.6 10.6 0 0 1 5.55 0c2.12-1.44 3.05-1.14 3.05-1.14.61 1.54.23 2.68.12 2.96.71.78 1.14 1.78 1.14 3 0 4.27-2.6 5.21-5.08 5.49.4.35.75 1.02.75 2.06v3.07c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z" />
-      </svg>
-      Continue with GitHub
-      </button>
+          {loading ? (
+            <Loader2 size={18} className="animate-spin" />
+          ) : (
+            <svg
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.54v-2.08c-3.1.67-3.75-1.32-3.75-1.32-.5-1.29-1.24-1.63-1.24-1.63-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15.99 1.7 2.6 1.21 3.23.93.1-.72.39-1.21.71-1.49-.28-2.47-1.24-5.07-5.5-5.07-1.22 0-2.22.44-3 1.15-.28-.12-1.42-.5-2.96.11 0 0-.3.94 1.14 3.05a10.6 10.6 0 0 1 0 5.55c-1.44 2.12-1.14 3.05-1.14 3.05 1.54.61 2.68.23 2.96.12.78.71 1.78 1.14 3 1.14 4.27 0 5.21-2.6 5.49-5.08.35.4 1.02.75 2.06.75h3.07c.3 0 .65.2.54.77A11.1 11.1 0 0 0 12 .9Z" />
+            </svg>
+          )}
+          Continue with GitHub
+        </button>
 
         {/* Login Link */}
         <p className="mt-7 text-center text-sm text-[#737B91]">

@@ -128,3 +128,22 @@
     @apply font-sans;
   }
 }
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #F7F8FC;
+  color: #252B42;
+}
+
+html.dark body {
+  background-color: #14182B;
+  color: #F7F8FC;
+}
