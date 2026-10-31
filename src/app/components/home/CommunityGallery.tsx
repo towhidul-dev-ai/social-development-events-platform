@@ -102,7 +102,7 @@ export default function CommunityGallery() {
         {/* Explore Button */}
         <div className="mt-10 text-center">
           <Link
-            href="/events"
+            href="/upcoming-events"
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#6477E8] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-[#6477E8]/20 transition-all hover:-translate-y-0.5 hover:bg-[#5367D5]"
           >
             Explore Community Events
