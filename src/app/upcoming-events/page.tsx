@@ -354,7 +354,7 @@ export default function UpcomingEventsPage() {
 
                   {/* View Event */}
                   <Link
-                    href={`/events/${event._id}`}
+                    href={`/upcoming-event-details/${event._id}`}
                     className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#6477E8] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#5367D5]"
                   >
                     View Event
