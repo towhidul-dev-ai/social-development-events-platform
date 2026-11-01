@@ -123,7 +123,7 @@ export default function Footer() {
                   className="mt-0.5 shrink-0 text-[#6477E8]"
                 />
                 <span className="break-all text-sm text-[#737B91] dark:text-[#AAB1C8]">
-                  hello@example.com
+                  shahedtowhidulislam6@gmail.com
                 </span>
               </li>
 

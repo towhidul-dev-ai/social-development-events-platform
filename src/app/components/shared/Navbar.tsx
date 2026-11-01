@@ -34,7 +34,7 @@ const accountLinks = [
   },
   {
     name: "Joined Events",
-    href: "/joined-events",
+    href: "/joint-events",
     icon: CalendarDays,
   },
 ];
