@@ -666,7 +666,7 @@ import EditEventDialog from "../components/events/EditEventDialog";
 import DeleteEventDialog from "../components/events/DeleteEventDialog";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  process.env.API_URL || "http://localhost:8000";
 
 type Event = {
   _id: string;
