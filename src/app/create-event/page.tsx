@@ -628,7 +628,7 @@ import {
 import { authClient } from "@/lib/auth-client";
 
 const API_URL =
-  process.env.API_URL || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const INITIAL_FORM_DATA = {
   title: "",
@@ -823,6 +823,7 @@ export default function CreateEventPage() {
           // Display information only.
           // Backend gets creatorId and creatorEmail from verified JWT.
           creatorName: session.user.name || "Community Organizer",
+          creatorEmail: session.user.email,
           creatorImage: session.user.image || "",
         }),
       });

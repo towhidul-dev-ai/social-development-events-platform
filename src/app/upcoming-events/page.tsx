@@ -6,7 +6,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 
 const API_URL =
-  process.env.API_URL || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 type Event = {
   _id: string;
@@ -59,6 +59,7 @@ export default function UpcomingEventsPage() {
           cache: "no-store",
         }
       );
+      
 
       const result = await response.json();
 

@@ -22,6 +22,13 @@ import {
 import { authClient } from "@/lib/auth-client";
 
 const accountLinks = [
+
+  {
+    name: "My Profile",
+    href: "/profile",
+    icon: UserRound,
+  },
+
   {
     name: "Create Event",
     href: "/create-event",
