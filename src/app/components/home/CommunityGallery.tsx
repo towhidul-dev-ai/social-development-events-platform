@@ -1,4 +1,3 @@
-
 import Link from "next/link";
 import { ArrowRight, Images } from "lucide-react";
 
@@ -42,36 +41,34 @@ const galleryImages = [
 
 export default function CommunityGallery() {
   return (
-    <section className="bg-[#F7F8FC] py-16 sm:py-20 lg:py-24">
+    <section className="bg-[#F7F8FC] py-16 transition-colors duration-300 dark:bg-[#14182B] sm:py-20 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
         {/* Section Heading */}
         <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#6477E8]/20 bg-[#E9EAFE] px-4 py-2 text-sm font-medium text-[#4F5FC4]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#6477E8]/20 bg-[#E9EAFE] px-4 py-2 text-sm font-medium text-[#4F5FC4] dark:border-[#8998FF]/20 dark:bg-[#292E50] dark:text-[#AAB1FF]">
             <Images size={16} />
             Our Community Gallery
           </span>
 
-          <h2 className="mt-5 text-3xl font-bold tracking-tight text-[#252B42] sm:text-4xl lg:text-5xl">
+          <h2 className="mt-5 text-3xl font-bold tracking-tight text-[#252B42] dark:text-white sm:text-4xl lg:text-5xl">
             Moments That
-            <span className="block text-[#6477E8]">
+            <span className="block text-[#6477E8] dark:text-[#AAB1FF]">
               Make a Difference
             </span>
           </h2>
 
-          <p className="mt-5 text-base leading-7 text-[#737B91] sm:text-lg sm:leading-8">
+          <p className="mt-5 text-base leading-7 text-[#737B91] dark:text-[#AAB1C8] sm:text-lg sm:leading-8">
             Explore moments of kindness, teamwork, and positive change
             created by people working together in their communities.
           </p>
         </div>
 
         {/* Gallery Grid */}
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 md:auto-rows-[220px] lg:mt-16 lg:gap-5">
-
+        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 md:auto-rows-[220px] md:grid-cols-4 lg:mt-16 lg:gap-5">
           {galleryImages.map((item) => (
             <div
               key={item.title}
-              className={`group relative min-h-[240px] overflow-hidden rounded-2xl border border-[#E5E8F0] bg-white shadow-sm sm:min-h-[260px] md:min-h-0 ${item.className}`}
+              className={`group relative min-h-[240px] overflow-hidden rounded-2xl border border-[#E5E8F0] bg-white shadow-sm transition-colors dark:border-[#343B59] dark:bg-[#1D2340] sm:min-h-[260px] md:min-h-0 ${item.className}`}
             >
               {/* Gallery Image */}
               <img
@@ -96,7 +93,6 @@ export default function CommunityGallery() {
               </div>
             </div>
           ))}
-
         </div>
 
         {/* Explore Button */}
@@ -109,7 +105,6 @@ export default function CommunityGallery() {
             <ArrowRight size={18} />
           </Link>
         </div>
-
       </div>
     </section>
   );

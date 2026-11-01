@@ -63,12 +63,80 @@ export default function JoinedEventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [token, setToken] = useState<string | null>(null);
+  const [tokenLoading, setTokenLoading] = useState(true);
 
-  // Fetch joined events
+  // Retrieve JWT from Better Auth
+  useEffect(() => {
+    let active = true;
+
+    const getToken = async () => {
+      if (!user) {
+        setToken(null);
+        setTokenLoading(false);
+        return;
+      }
+
+      setTokenLoading(true);
+
+      try {
+        const { data, error } = await authClient.token();
+
+        if (error) {
+          throw new Error(
+            error.message || "Failed to retrieve authentication token."
+          );
+        }
+
+        if (!data?.token) {
+          throw new Error("Authentication token was not returned.");
+        }
+
+        if (active) {
+          setToken(data.token);
+          console.log("Joined Events: JWT retrieved successfully.");
+        }
+      } catch (error) {
+        console.error("Joined Events JWT error:", error);
+
+        if (active) {
+          setToken(null);
+          setError(
+            error instanceof Error
+              ? error.message
+              : "Authentication failed."
+          );
+        }
+      } finally {
+        if (active) {
+          setTokenLoading(false);
+        }
+      }
+    };
+
+    if (!sessionLoading) {
+      getToken();
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [user, sessionLoading]);
+
+  // Fetch joined events using verified JWT
   const fetchJoinedEvents = useCallback(async () => {
-    if (!user?.email) {
+    if (!user) {
       setEvents([]);
       setLoading(false);
+      return;
+    }
+
+    if (tokenLoading) return;
+
+    if (!token) {
+      setEvents([]);
+      setLoading(false);
+      setError("Authentication token is unavailable. Please sign in again.");
       return;
     }
 
@@ -77,10 +145,13 @@ export default function JoinedEventsPage() {
       setError("");
 
       const response = await fetch(
-        `${API_URL}/api/joined-events?email=${encodeURIComponent(
-          user.email
-        )}`,
+        `${API_URL}/api/joined-events`,
         {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
           cache: "no-store",
         }
       );
@@ -94,12 +165,11 @@ export default function JoinedEventsPage() {
 
       if (!response.ok || !data.success) {
         throw new Error(
-          data.message || "Failed to load joined events."
+          data.message ||
+            `Failed to load joined events (${response.status}).`
         );
       }
 
-      // Backend returns events sorted by eventDate (earliest first).
-      // Sort again defensively in the frontend.
       const sortedEvents = [...(data.events || [])].sort(
         (a, b) => {
           const dateA = new Date(a.eventDate).getTime();
@@ -129,17 +199,17 @@ export default function JoinedEventsPage() {
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user, token, tokenLoading]);
 
-  // Fetch after session loads
+  // Fetch after session and token are ready
   useEffect(() => {
-    if (!sessionLoading) {
+    if (!sessionLoading && !tokenLoading) {
       fetchJoinedEvents();
     }
-  }, [sessionLoading, fetchJoinedEvents]);
+  }, [sessionLoading, tokenLoading, fetchJoinedEvents]);
 
   // Loading state
-  if (sessionLoading || loading) {
+  if (sessionLoading || tokenLoading || loading) {
     return (
       <main className="min-h-screen bg-[#F7F8FC] px-4 py-12 dark:bg-[#14182B]">
         <div className="mx-auto max-w-7xl">
@@ -331,26 +401,17 @@ export default function JoinedEventsPage() {
 
                   <div className="mt-4 space-y-3 border-t border-[#E5E8F0] pt-4 dark:border-[#343B59]">
                     <div className="flex items-center gap-2 text-sm text-[#737B91] dark:text-[#C1C6D8]">
-                      <CalendarDays
-                        size={16}
-                        className="shrink-0 text-[#6477E8]"
-                      />
+                      <CalendarDays size={16} className="shrink-0 text-[#6477E8]" />
                       {formatDate(event.eventDate)}
                     </div>
 
                     <div className="flex items-center gap-2 text-sm text-[#737B91] dark:text-[#C1C6D8]">
-                      <MapPin
-                        size={16}
-                        className="shrink-0 text-[#6477E8]"
-                      />
+                      <MapPin size={16} className="shrink-0 text-[#6477E8]" />
                       <span className="truncate">{event.location}</span>
                     </div>
 
                     <div className="flex items-center gap-2 text-sm text-[#737B91] dark:text-[#C1C6D8]">
-                      <Users
-                        size={16}
-                        className="shrink-0 text-[#6477E8]"
-                      />
+                      <Users size={16} className="shrink-0 text-[#6477E8]" />
                       Organizer: {event.creatorName || "Community Organizer"}
                     </div>
                   </div>
