@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GoodGather – Social Development Events Platform
+
+GoodGather is a community-focused event platform where people can discover social development events, connect with others, and take part in activities that make a positive difference.
+
+I built this project to make it easier for people to explore upcoming events, create their own events, and manage the activities they have joined. The platform provides a simple and responsive experience across desktop, tablet, and mobile devices.
+
+## Live Website
+
+🔗 **Live Demo:** https://social-frontend-three-eta.vercel.app
+
+## Project Repositories
+
+- **Frontend:** https://github.com/towhidul-dev-ai/social-development-events-platform
+- **Backend:** https://github.com/towhidul-dev-ai/social-development-server
+
+## Features
+
+- **User Authentication:** Register and log in using email and password, with social login support.
+- **Explore Events:** Browse upcoming social development events and view their details.
+- **Create Events:** Logged-in users can create events by providing the event information.
+- **Join Events:** Authenticated users can join events and keep track of their participation.
+- **Manage Events:** Users can edit or delete events they have created.
+- **Joined Events:** View joined events in one place, organized by event date.
+- **Profile Management:** View and update profile information.
+- **Protected Routes:** Private pages and API operations require authentication.
+- **Responsive Design:** The interface adapts to different screen sizes.
+- **Dark and Light Mode:** Switch between themes for a comfortable browsing experience.
+
+## Technologies Used
+
+### Frontend
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Better Auth
+- Sonner
+
+### Backend
+- Node.js
+- Express.js
+- MongoDB
+- Better Auth JWT verification
+
+### Deployment
+- Vercel
 
 ## Getting Started
 
-First, run the development server:
+Follow these steps to run the frontend locally.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/towhidul-dev-ai/social-development-events-platform.git
+```
+
+### 2. Open the project folder
+
+```bash
+cd social-development-events-platform
+```
+
+### 3. Install dependencies
+
+```bash
+npm install
+```
+
+### 4. Configure environment variables
+
+Create a `.env.local` file in the project root and add the required values:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+Add any additional Better Auth or authentication environment variables required by your project configuration. Keep secret values private.
+
+### 5. Start the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open **http://localhost:3000** in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Backend Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The backend is maintained in a separate repository.
 
-## Learn More
+```bash
+git clone https://github.com/towhidul-dev-ai/social-development-server.git
+cd social-development-server
+npm install
+```
 
-To learn more about Next.js, take a look at the following resources:
+Configure the required MongoDB and authentication environment variables in your backend environment file, then start the server using the script defined in `package.json`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Purpose
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+GoodGather was developed as a full-stack project to practice building a real-world event management application. It helped me work with frontend development, REST APIs, database operations, authentication, protected routes, and deployment.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Developed with care by Towhidul Islam Shahed.**
